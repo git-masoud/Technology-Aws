@@ -103,7 +103,7 @@ public class S3DataSinkTest {
                 .chunkSizeBytes(CHUNK_SIZE_BYTES)
                 .build();
        var res=newdataSink.transferParts(List.of(new InputStreamDataSource(KEY_NAME, new ByteArrayInputStream("content smaller than a chunk size".getBytes(UTF_8)))));
-        System.out.println(res);
+        System.out.println(res.getFailureMessages());
     }
     @Test
     void transferParts_singlePart_succeeds() {
