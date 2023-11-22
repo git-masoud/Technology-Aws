@@ -14,7 +14,10 @@
 
 package org.eclipse.edc.connector.dataplane.aws.s3;
 
+import org.eclipse.edc.aws.s3.AwsClientProviderConfiguration;
+import org.eclipse.edc.aws.s3.AwsClientProviderImpl;
 import org.eclipse.edc.aws.s3.S3BucketSchema;
+import org.eclipse.edc.aws.s3.S3ClientRequest;
 import org.eclipse.edc.connector.dataplane.spi.pipeline.InputStreamDataSource;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +25,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.Arguments;
 import org.mockito.ArgumentCaptor;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -40,6 +44,7 @@ import java.util.stream.Stream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.edc.aws.s3.S3BucketSchema.REGION;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -78,6 +83,28 @@ public class S3DataSinkTest {
                 .thenReturn(UploadPartResponse.builder().eTag(ETAG).build());
     }
 
+    @Test
+    void testman(){
+        var accessKey="AKIATY2OOE65YD3Z3MXX";
+        var secretKey="";
+        AwsClientProviderConfiguration configuration = AwsClientProviderConfiguration.Builder.newInstance()
+                .credentialsProvider(() -> AwsBasicCredentials.create(accessKey, secretKey) )
+                .build();
+       var clientProvider= new AwsClientProviderImpl(configuration);
+
+       var client = clientProvider.s3Client(S3ClientRequest.from("eu-central-1", ""));
+       var newdataSink = S3DataSink.Builder.newInstance()
+                .bucketName("mdtarget")
+                .keyName("motionData222")
+                .client(client)
+                .requestId(TestFunctions.createRequest(S3BucketSchema.TYPE).build().getId())
+                .executorService(Executors.newFixedThreadPool(2))
+                .monitor(mock(Monitor.class))
+                .chunkSizeBytes(CHUNK_SIZE_BYTES)
+                .build();
+       var res=newdataSink.transferParts(List.of(new InputStreamDataSource(KEY_NAME, new ByteArrayInputStream("content smaller than a chunk size".getBytes(UTF_8)))));
+        System.out.println(res);
+    }
     @Test
     void transferParts_singlePart_succeeds() {
         var result = dataSink.transferParts(
